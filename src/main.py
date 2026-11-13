@@ -43,6 +43,12 @@ def display_market_summary(title, market, prices):
     print(f"First close  : {float(prices[0]['close']):.2f} {currency}")
     print(f"Last close   : {float(prices[-1]['close']):.2f} {currency}")
 
+def display_market_metadata(title, market):
+    print(f"{title} metadata")
+    print(f"Ticker   : {market['ticker']}")
+    print(f"Name     : {market['name']}")
+    print(f"Currency : {market['currency']}")
+    print(f"Market   : {market.get('market', 'N/A')}")
 
 def main():
     instruments = load_instruments()
@@ -63,6 +69,11 @@ def main():
     print(f"Period: {LOOKBACK_LABEL}")
     print(f"Interval: {INTERVAL_LABEL}")
 
+    print()
+    display_market_metadata("Instrument", instrument)
+    print()
+    display_market_metadata("Benchmark", benchmark)
 
+    
 if __name__ == "__main__":
     main()
