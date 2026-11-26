@@ -60,8 +60,8 @@ def display_market_summary(title, market, prices):
     print(f"Observations : {len(prices)}")
     print(f"First date   : {get_first_date(prices)}")
     print(f"Last date    : {get_last_date(prices)}")
-    print(f"First close  : {float(prices[0]['close']):.2f} {currency}")
-    print(f"Last close   : {float(prices[-1]['close']):.2f} {currency}")
+    print(f"First close  : {prices[0]['close']:.2f} {currency}")
+    print(f"Last close   : {prices[-1]['close']:.2f} {currency}")
 
 
 def display_market_metadata(title, market):
@@ -72,7 +72,16 @@ def display_market_metadata(title, market):
     print(f"Market   : {market.get('market', 'N/A')}")
 
 
-def display_comparison(instrument, benchmark, instrument_prices, benchmark_prices):
+def main():
+    instruments = load_instruments()
+    prices = [normalize_price_row(row) for row in load_prices()]
+
+    instrument = instruments["instrument"]
+    benchmark = instruments["benchmark"]
+
+    instrument_prices = filter_prices(prices, instrument["ticker"])
+    benchmark_prices = filter_prices(prices, benchmark["ticker"])
+
     aligned_instrument, aligned_benchmark = align_series(
         instrument_prices,
         benchmark_prices,
@@ -88,13 +97,17 @@ def display_comparison(instrument, benchmark, instrument_prices, benchmark_price
     instrument_base_100 = calculate_base_100(aligned_instrument)
     benchmark_base_100 = calculate_base_100(aligned_benchmark)
 
-    print("Comparison")
-    print(f"Common observations : {len(aligned_instrument)}")
-    print(f"Common period       : {get_first_date(aligned_instrument)} -> {get_last_date(aligned_instrument)}")
+    print("=== MarketPulse ===")
     print()
-    print("Period return")
-    print(f"{instrument['ticker']:<6}: {instrument_return:.2f}%")
-    print(f"{benchmark['ticker']:<6}: {benchmark_return:.2f}%")
+    print("Market configuration")
+    print(f"Period   : {LOOKBACK_LABEL}")
+    print(f"Interval : {INTERVAL_LABEL}")
+    print()
+    display_market_summary("Instrument", instrument, aligned_instrument)
+    print(f"Period return : {instrument_return:.2f}%")
+    print()
+    display_market_summary("Benchmark", benchmark, aligned_benchmark)
+    print(f"Period return : {benchmark_return:.2f}%")
     print()
     print("Relative performance")
     print(
@@ -103,49 +116,16 @@ def display_comparison(instrument, benchmark, instrument_prices, benchmark_price
     )
     print()
     print("Base 100")
-    print(
-        f"{instrument['ticker']:<6}: "
-        f"{instrument_base_100[0]['value']:.2f} -> "
-        f"{instrument_base_100[-1]['value']:.2f}"
-    )
-    print(
-        f"{benchmark['ticker']:<6}: "
-        f"{benchmark_base_100[0]['value']:.2f} -> "
-        f"{benchmark_base_100[-1]['value']:.2f}"
-    )
-
-
-def main():
-    instruments = load_instruments()
-    prices = [normalize_price_row(row) for row in load_prices()]
-
-    instrument = instruments["instrument"]
-    benchmark = instruments["benchmark"]
-
-    instrument_prices = filter_prices(prices, instrument["ticker"])
-    benchmark_prices = filter_prices(prices, benchmark["ticker"])
-
-    print("=== MarketPulse ===")
-    print()
-    display_market_summary("Instrument", instrument, instrument_prices)
-    print()
-    display_market_summary("Benchmark", benchmark, benchmark_prices)
-    print()
-    print(f"Period: {LOOKBACK_LABEL}")
-    print(f"Interval: {INTERVAL_LABEL}")
-
+    width = max(len(instrument["ticker"]), len(benchmark["ticker"]))
+    for series in (instrument_base_100, benchmark_base_100):
+        print(
+            f"{series[0]['ticker']:<{width}} : "
+            f"{series[0]['value']:.2f} -> {series[-1]['value']:.2f}"
+        )
     print()
     display_market_metadata("Instrument", instrument)
     print()
     display_market_metadata("Benchmark", benchmark)
-
-    print()
-    display_comparison(
-        instrument,
-        benchmark,
-        instrument_prices,
-        benchmark_prices,
-    )
 
 
 if __name__ == "__main__":
