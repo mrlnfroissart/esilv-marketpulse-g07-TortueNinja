@@ -1,15 +1,18 @@
 import yfinance as yf
 
-
 # Canonical MarketPulse ticker -> Yahoo Finance symbol.
-# Provider-specific symbols stay at the provider boundary.
 YAHOO_SYMBOLS = {
     "AAPL": "AAPL",
     "SP500": "^GSPC",
 }
 
 
-def fetch_yahoo_prices(symbol, canonical_ticker, period="1mo", interval="1d"):
+def fetch_yahoo_prices(
+    symbol,
+    canonical_ticker,
+    period="1mo",
+    interval="1d",
+):
     history = yf.Ticker(symbol).history(
         period=period,
         interval=interval,
@@ -17,9 +20,12 @@ def fetch_yahoo_prices(symbol, canonical_ticker, period="1mo", interval="1d"):
     )
 
     if history.empty:
-        raise ValueError(f"No Yahoo Finance data returned for {symbol}")
+        raise ValueError(
+            f"No Yahoo Finance data returned for {symbol}"
+        )
 
     rows = []
+
     for timestamp, row in history.iterrows():
         rows.append({
             "date": timestamp.strftime("%Y-%m-%d"),
