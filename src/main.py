@@ -8,6 +8,7 @@ from analytics import (
     calculate_period_return,
     calculate_relative_performance,
 )
+from providers.yahoo_provider import YAHOO_SYMBOLS, fetch_yahoo_prices
 
 
 DATA_DIR = Path("data/sample")
@@ -18,12 +19,17 @@ DATA_DIR = Path("data/sample")
 LOOKBACK_LABEL = "1 month"
 INTERVAL_LABEL = "Daily"
 
+PROVIDER_LABEL = "Yahoo Finance via yfinance"
+YAHOO_PERIOD = "1mo"
+YAHOO_INTERVAL = "1d"
+
 
 def load_instruments():
     with open(DATA_DIR / "instruments.json", encoding="utf-8") as file:
         return json.load(file)
 
 
+# Local CSV path, kept as fallback if Yahoo is temporarily unavailable.
 def load_prices():
     with open(DATA_DIR / "prices.csv", encoding="utf-8") as file:
         return list(csv.DictReader(file))
@@ -74,13 +80,21 @@ def display_market_metadata(title, market):
 
 def main():
     instruments = load_instruments()
-    prices = [normalize_price_row(row) for row in load_prices()]
-
     instrument = instruments["instrument"]
     benchmark = instruments["benchmark"]
 
-    instrument_prices = filter_prices(prices, instrument["ticker"])
-    benchmark_prices = filter_prices(prices, benchmark["ticker"])
+    instrument_prices = fetch_yahoo_prices(
+        symbol=YAHOO_SYMBOLS[instrument["ticker"]],
+        canonical_ticker=instrument["ticker"],
+        period=YAHOO_PERIOD,
+        interval=YAHOO_INTERVAL,
+    )
+    benchmark_prices = fetch_yahoo_prices(
+        symbol=YAHOO_SYMBOLS[benchmark["ticker"]],
+        canonical_ticker=benchmark["ticker"],
+        period=YAHOO_PERIOD,
+        interval=YAHOO_INTERVAL,
+    )
 
     aligned_instrument, aligned_benchmark = align_series(
         instrument_prices,
@@ -99,9 +113,14 @@ def main():
 
     print("=== MarketPulse ===")
     print()
+    print("Provider")
+    print(PROVIDER_LABEL)
+    print()
     print("Market configuration")
-    print(f"Period   : {LOOKBACK_LABEL}")
-    print(f"Interval : {INTERVAL_LABEL}")
+    print(f"Instrument : {instrument['ticker']} - {instrument['name']}")
+    print(f"Benchmark  : {benchmark['ticker']} - {benchmark['name']}")
+    print(f"Period     : {LOOKBACK_LABEL} ({YAHOO_PERIOD})")
+    print(f"Interval   : {INTERVAL_LABEL} ({YAHOO_INTERVAL})")
     print()
     display_market_summary("Instrument", instrument, aligned_instrument)
     print(f"Period return : {instrument_return:.2f}%")
